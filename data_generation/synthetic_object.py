@@ -13,8 +13,10 @@ def create_directory_structure() -> str:
     Returns:
         str: The training directory path.
     """
-   basename = os.path.basename(os.getcwd())
+    basename = os.path.basename(os.getcwd())
     training_dir: str = "../training_data" if basename == "data_generation" else "./training_data" if basename == "text2video-from-scratch" else os.path.abspath("training_data")
+    
+    os.makedirs(training_dir, exist_ok=True)
     
     return training_dir
 
