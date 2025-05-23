@@ -134,7 +134,7 @@ def main():
 
     # Step 5: Create a training folder
     basename = os.path.basename(os.getcwd())
-    training_dir = "../training_data" if basename == "data_generation" else "./training_data" if basename == "text2video-from-scratch" else os.path.abspath("training_data")
+    output_dir = "../training_data" if basename == "data_generation" else "./training_data" if basename == "text2video-from-scratch" else os.path.abspath("training_data")
     
     create_training_data(df, videos_dir, output_dir, size=(64, 64), num_frames=10)
 
