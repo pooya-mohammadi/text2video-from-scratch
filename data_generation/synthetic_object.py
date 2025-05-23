@@ -13,9 +13,14 @@ def create_directory_structure() -> str:
     Returns:
         str: The training directory path.
     """
-
-    training_dir: str = os.path.join("../training_data")
-    os.makedirs(training_dir, exist_ok=True)
+    basename = os.path.basename(os.getcwd())
+    training_dir: str = "../training_data" if basename == "data_generation" else "./training_data" if basename == "text2video-from-scratch" else None
+    
+    if training_dir is None:
+        print("Error: Run from 'text2video-from-scratch' or 'data_generation' directory")
+        raise SystemExit
+        training_dir: str = os.path.join("../training_data") 
+        os.makedirs(training_dir, exist_ok=True)
     
     return training_dir
 
