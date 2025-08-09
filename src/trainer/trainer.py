@@ -211,8 +211,8 @@ class Trainer:
                             focus_present_mask=focus_present_mask
                         )
 
-                        # Backpropagate loss
-                        self.scaler.scale(loss / self.gradient_accumulate_every).backward()
+                    # Backpropagate loss
+                    self.scaler.scale(loss / self.gradient_accumulate_every).backward()
 
                 print(f'{self.step}: {loss.item()}')
 
