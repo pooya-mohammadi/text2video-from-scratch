@@ -20,12 +20,12 @@ def get_tokenizer() -> BertTokenizer:
     return TOKENIZER
 
 # Function to retrieve the BERT model, initializes if not loaded yet
-def get_bert() -> BertModel:
+def get_bert(device: str = "cuda:1") -> BertModel:
     global MODEL
     if not exists(MODEL):
         MODEL = BertModel.from_pretrained('bert-base-cased')
         if torch.cuda.is_available():
-            MODEL = MODEL.cuda()  # Move to GPU if available
+            MODEL = MODEL.to(device)  # Move to GPU if available
     return MODEL
 
 # Function to tokenize a list or string of texts
@@ -51,7 +51,8 @@ def bert_embed(
     token_ids: torch.Tensor,
     return_cls_repr: bool = False,
     eps: float = 1e-8,
-    pad_id: int = 0
+    pad_id: int = 0,
+        device: str = "cuda:1"
 ) -> torch.Tensor:
     """
     Given tokenized input, returns embeddings from BERT.
@@ -69,8 +70,8 @@ def bert_embed(
     mask = token_ids != pad_id  # Create a mask to ignore padding tokens
 
     if torch.cuda.is_available():
-        token_ids = token_ids.cuda()
-        mask = mask.cuda()
+        token_ids = token_ids.to(device)
+        mask = mask.to(device)
 
     # Obtain the hidden states from the BERT model
     outputs = model(

@@ -58,7 +58,8 @@ class Trainer:
         save_model_every: int = 1000,  # Frequency to save the model
         results_folder: str = './results',  # Folder to save results
         num_sample_rows: int = 4,  # Number of rows for video sampling
-        max_grad_norm: Optional[float] = None  # Max gradient norm for clipping (if None, no clipping)
+        max_grad_norm: Optional[float] = None,  # Max gradient norm for clipping (if None, no clipping)
+        device: str = "cuda:1",
     ):
         """
         Initializes the trainer with the given parameters.
@@ -81,7 +82,8 @@ class Trainer:
             max_grad_norm: Gradient clipping norm.
         """
         super().__init__()
-        
+
+        self.device = device
         self.model = diffusion_model
         self.ema = EMA(ema_decay)
         self.ema_model = copy.deepcopy(self.model)
@@ -194,7 +196,7 @@ class Trainer:
                 if len(data) == 2:
                     video_data, text_data = data
 
-                video_data = video_data.cuda()
+                video_data = video_data.to(self.device)
 
                 with autocast(enabled=self.amp):  # Automatic mixed precision
                     if text_data is not None:

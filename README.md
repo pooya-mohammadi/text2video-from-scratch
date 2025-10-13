@@ -1314,7 +1314,7 @@ def get_bert() -> BertModel:
     if not exists(MODEL):  # If the model is not already loaded
         MODEL = BertModel.from_pretrained('bert-base-cased')  # Load the BERT model
         if torch.cuda.is_available():  # If GPU is available
-            MODEL = MODEL.cuda()  # Move model to GPU
+            MODEL = MODEL.to(device)  # Move model to GPU
     return MODEL
 
 # Function to tokenize input text (single string or a list of strings)
@@ -1343,8 +1343,8 @@ def bert_embed(
     mask = token_ids != pad_id  # Create a mask for padding tokens (to ignore them)
 
     if torch.cuda.is_available():  # If GPU is available, move tensors to GPU
-        token_ids = token_ids.cuda()
-        mask = mask.cuda()
+        token_ids = token_ids.to(device)
+        mask = mask.to(device)
 
     # Run BERT model and get the outputs (hidden states from all layers)
     outputs = model(
@@ -1432,7 +1432,7 @@ class Trainer:
         while self.step < self.train_num_steps:
             for _ in range(self.gradient_accumulate_every):  # Accumulate gradients over multiple steps
                 data = next(self.dl)  # Load data
-                video_data, text_data = data[0].cuda(), data[1] if len(data) == 2 else None  # Move data to GPU
+                video_data, text_data = data[0].to(device), data[1] if len(data) == 2 else None  # Move data to GPU
                 with autocast(enabled=self.amp):  # Mixed precision
                     loss = self.model(video_data, cond=text_data)  # Forward pass
                     self.scaler.scale(loss / self.gradient_accumulate_every).backward()  # Backpropagate loss
@@ -1522,7 +1522,7 @@ We have coded everything its time to define our diffusion model and start traini
 ```python
 # Initialize the 3D U-Net model with the configuration parameters for the model.
 # This model is moved to the GPU (cuda).
-model = Unet3D(**config['model']).cuda()
+model = Unet3D(**config['model']).to(device)
 
 # Initialize the GaussianDiffusion model with the U-Net model as the denoising function.
 # Additional configuration parameters for the diffusion process are loaded from the `config['diffusion']`.
@@ -1530,7 +1530,7 @@ model = Unet3D(**config['model']).cuda()
 diffusion = GaussianDiffusion(
     denoise_fn = model,  # The model will be used to denoise the noisy images during the diffusion process.
     **config['diffusion']  # Additional diffusion settings, such as timesteps, noise schedules, etc.
-).cuda()
+).to(device)
 
 # Initialize the Trainer class with the diffusion model, training configuration, and the folder containing the training data.
 # This is also moved to the GPU.

@@ -1,7 +1,6 @@
 --extra-index-url https://download.pytorch.org/whl/cu118
 torch
 torchvision
-torchaudio
 einops
 einops-exts
 rotary-embedding-torch
@@ -11,3 +10,4 @@ transformers[torch]
 tqdm
 kaggle
 datasets
+moviepy

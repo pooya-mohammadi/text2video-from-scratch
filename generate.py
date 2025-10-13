@@ -47,7 +47,7 @@ def load_model(model_path: str, config: dict) -> GaussianDiffusion:
     diffusion = GaussianDiffusion(
         denoise_fn=model,
         **config["diffusion"]
-    ).cuda()
+    ).to(config.get("device", "cuda:1"))
 
     # Find the latest model checkpoint
     if os.path.isdir(model_path):

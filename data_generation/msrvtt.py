@@ -1,13 +1,51 @@
 import os
+import random
+from os.path import exists
+
+import matplotlib.pyplot as plt
+from deep_utils import StringUtils
+from joblib import Parallel, delayed
+from moviepy import VideoFileClip
+import os
 import subprocess
 import zipfile
 from pathlib import Path
 from typing import List
 import pandas as pd
 from tqdm import tqdm
-from moviepy.editor import VideoFileClip
+from moviepy import VideoFileClip
 from datasets import load_dataset
 
+# Function to visualize random video frames
+def visualize_random_videos(videos_dir: str, num_videos: int = 8) -> None:
+    # Get all video files with .mp4 extension
+    video_files = [f for f in os.listdir(videos_dir) if f.endswith('.mp4')]
+
+    # Randomly sample 'num_videos' videos
+    random_videos = random.sample(video_files, num_videos)
+
+    # Create a subplot to display the video frames
+    fig, axes = plt.subplots(2, 4, figsize=(12, 6))
+    axes = axes.ravel()  # Flatten the axes for easy indexing
+
+    # Loop through the selected videos and display their first frame
+    for i, video_file in enumerate(random_videos):
+        video_path = os.path.join(videos_dir, video_file)
+
+        # Load the video and extract the first 2 seconds for preview
+        clip = VideoFileClip(video_path).subclip(0, 2)
+
+        # Get the first frame of the video
+        frame = clip.get_frame(0)
+
+        # Display the frame on the subplot
+        axes[i].imshow(frame)
+        axes[i].axis('off')  # Hide the axes for cleaner visualization
+        axes[i].set_title(f"Video {i + 1}")  # Set the title with the video number
+
+    # Adjust layout for better spacing
+    plt.tight_layout()
+    plt.show()
 
 def download_kaggle_dataset(dataset_name: str, download_dir: str) -> None:
     """
@@ -68,16 +106,16 @@ def convert_video_to_gif(video_path: str, gif_path: str, size: tuple = (64, 64),
         clip = VideoFileClip(video_path)
 
         # Resize the video to the desired size
-        clip = clip.resize(height=size[1], width=size[0])
+        clip = clip.resized(height=size[1], width=size[0])
         
         # Sample frames evenly from the video and convert to GIF
-        clip = clip.subclip(0, clip.duration).resize(size).set_fps(clip.fps).set_duration(clip.duration / num_frames)
+        clip = clip.subclipped(0, clip.duration).resized(size).with_fps(clip.fps).with_duration(clip.duration / num_frames)
 
-        clip.write_gif(gif_path, program='ffmpeg')
+        clip.write_gif(gif_path)
 
         print(f"Converted {video_path} to GIF and saved as {gif_path}")
     except Exception as e:
-        print(f"Error converting video {video_path} to GIF: {e}")
+        StringUtils.print(f"Error converting video {video_path} to GIF: {e}")
 
 
 def create_training_data(df: pd.DataFrame, videos_dir: str, output_dir: str, size: tuple = (64, 64), num_frames: int = 10) -> None:
@@ -93,7 +131,9 @@ def create_training_data(df: pd.DataFrame, videos_dir: str, output_dir: str, siz
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     print("Starting the conversion of videos to GIFs and creating caption text files...")
-    
+
+    gif_data = []
+
     # Use tqdm to show a progress bar while iterating over the rows of the DataFrame
     for index, row in tqdm(df.iterrows(), total=df.shape[0], desc="Processing Videos", ncols=100):
         video_id = row['video_id']
@@ -103,14 +143,15 @@ def create_training_data(df: pd.DataFrame, videos_dir: str, output_dir: str, siz
         video_path = os.path.join(videos_dir, f"{video_id}.mp4")
         gif_path = os.path.join(output_dir, f"{video_id}.gif")
         caption_path = os.path.join(output_dir, f"{video_id}.txt")
-        
+        if not exists(gif_path):
+            gif_data.append((video_path, gif_path, size, num_frames))
         # Convert video to GIF with size and frame limit
-        convert_video_to_gif(video_path, gif_path, size=size, num_frames=num_frames)
-        
-        # Save the caption in a text file
-        with open(caption_path, 'w') as caption_file:
-            caption_file.write(caption)
-    
+        if not exists(caption_path):
+            # Save the caption in a text file
+            with open(caption_path, 'w') as caption_file:
+                caption_file.write(caption)
+
+    Parallel(n_jobs=10)(delayed(convert_video_to_gif)(*data) for data in gif_data)
     print(f"Training data successfully created in {output_dir}")
 
 
@@ -118,7 +159,7 @@ def main():
     # Step 1: Download the Kaggle dataset
     kaggle_dataset_name = 'vishnutheepb/msrvtt'
     download_dir = './msrvtt_data'
-    download_kaggle_dataset(kaggle_dataset_name, download_dir)
+    # download_kaggle_dataset(kaggle_dataset_name, download_dir)
 
     # Step 2: Unzip the Kaggle dataset
     zip_file_path = os.path.join(download_dir, 'msrvtt.zip')
@@ -138,6 +179,7 @@ def main():
     
     create_training_data(df, videos_dir, output_dir, size=(64, 64), num_frames=10)
 
+    visualize_random_videos(videos_dir)  # Display 8 random videos' frames
 
 if __name__ == "__main__":
     main()
